@@ -125,6 +125,15 @@ class FinetuneFasterRcnnFpnFc7(ImageFeatureEncoder):
         self.lc.bias.data.copy_(torch.from_numpy(bias))
         self.out_dim = out_dim
 
+        def state_dict_key_override(state_dict, prefix, *args, **kwargs):
+            old_prefix = prefix + "module."
+            for k in list(state_dict.keys()):
+                if k.startswith(old_prefix):
+                    new_k = k.replace(old_prefix, prefix)
+                    state_dict[new_k] = state_dict.pop(k)
+
+        self._register_load_state_dict_pre_hook(state_dict_key_override)
+
     def forward(self, image):
         i2 = self.lc(image)
         i3 = nn.functional.relu(i2)
