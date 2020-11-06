@@ -80,7 +80,9 @@ class MMFTrainer(
 
     def load_model(self):
         logger.info("Loading model")
-        attributes = self.config.model_config[self.config.model]
+        model_list = ['visual_bert_v2', 'visual_bert_v3']
+        if self.config.model in model_list:
+            attributes = self.config.model_config[self.config.model[:-3]]
         # Easy way to point to config for other model
         if isinstance(attributes, str):
             attributes = self.config.model_config[attributes]
