@@ -75,7 +75,8 @@ class Losses(nn.Module):
             self._evaluation_predict = config.get("evaluation", {}).get(
                 "predict", False
             )
-
+        if isinstance(loss_list, str):
+            loss_list = [loss_list]
         for loss in loss_list:
             self.losses.append(MMFLoss(loss))
 
@@ -570,3 +571,36 @@ class CrossEntropyLoss(nn.Module):
 
     def forward(self, sample_list, model_output):
         return self.loss_fn(model_output["scores"], sample_list.targets)
+
+
+@registry.register_loss("pair_cross_entropy")
+class CrossEntropyLoss(nn.Module):
+    def __init__(self, params=None):
+        super().__init__()
+        if params is None:
+            params = {}
+        self.loss_fn = nn.CrossEntropyLoss(**params)
+
+    def forward(self, sample_list, model_output):
+        batch_size = sample_list.targets.shape[0]
+        
+        # device = sample_list.targets.device
+        label0 = torch.LongTensor([0])
+        label1 = torch.LongTensor([1])
+        label2 = torch.LongTensor([2])
+        new_targets = []
+        for i in range(0, batch_size, 2):
+          if sample_list.targets[i] == sample_list.targets[i+1]:
+            new_targets.append(1)
+          else:
+            if sample_list.targets[i] == 1:
+              new_targets.append(0)
+            else:
+              new_targets.append(2)
+        new_targets = torch.LongTensor(new_targets)
+        new_targets = new_targets.to("cuda")
+        loss2 = self.loss_fn(model_output["extra_logits"], new_targets)
+        
+        return self.loss_fn(model_output["scores"], sample_list.targets) + loss2
+
+
