@@ -213,9 +213,13 @@ class BaseModel(nn.Module):
         assert (
             model_cls == cls
         ), f"Incorrect pretrained model key {model_name} for class {cls.__name__}"
-        output = load_pretrained_model(model_name, *args, **kwargs)
-        config, checkpoint = output["config"], output["checkpoint"]
 
+        if "from_file" in kwargs:
+            output = load_pretrained_model(kwargs["from_file"], *args, **kwargs)
+        else:
+            output = load_pretrained_model(model_name, *args, **kwargs)
+
+        config, checkpoint = output["config"], output["checkpoint"]
         # Some models need registry updates to be load pretrained model
         # If they have this method, call it so they can update accordingly
         if hasattr(cls, "update_registry_for_pretrained"):
