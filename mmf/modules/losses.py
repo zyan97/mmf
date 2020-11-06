@@ -604,3 +604,25 @@ class CrossEntropyLoss(nn.Module):
         return self.loss_fn(model_output["scores"], sample_list.targets) + loss2
 
 
+@registry.register_loss("attn_cross_entropy")
+class CrossEntropyLoss(nn.Module):
+    def __init__(self, params=None):
+        super().__init__()
+        if params is None:
+            params = {}
+        self.loss_fn = nn.CrossEntropyLoss(**params)
+
+    def forward(self, sample_list, model_output):
+        batch_size = sample_list.targets.shape[0]
+        loss2 = 0
+        new_targets = []
+        for i in range(0, batch_size, 2):
+          if sample_list.targets[i] == sample_list.targets[i+1]:
+              new_targets.append(0)
+          else:
+              new_targets.append(1)
+        new_targets = torch.LongTensor(new_targets)
+        new_targets = new_targets.to("cuda")
+        loss2 = self.loss_fn(model_output["extra_logits"], new_targets)
+        
+        return self.loss_fn(model_output["scores"], sample_list.targets) + loss2
