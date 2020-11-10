@@ -573,7 +573,7 @@ class CrossEntropyLoss(nn.Module):
         return self.loss_fn(model_output["scores"], sample_list.targets)
 
 
-@registry.register_loss("pair_cross_entropy")
+@registry.register_loss("triplet_cross_entropy")
 class CrossEntropyLoss(nn.Module):
     def __init__(self, params=None):
         super().__init__()
@@ -604,7 +604,7 @@ class CrossEntropyLoss(nn.Module):
         return self.loss_fn(model_output["scores"], sample_list.targets) + loss2
 
 
-@registry.register_loss("attn_cross_entropy")
+@registry.register_loss("pair_cross_entropy")
 class CrossEntropyLoss(nn.Module):
     def __init__(self, params=None):
         super().__init__()
@@ -626,3 +626,28 @@ class CrossEntropyLoss(nn.Module):
         loss2 = self.loss_fn(model_output["extra_logits"], new_targets)
         
         return self.loss_fn(model_output["scores"], sample_list.targets) + loss2
+    
+
+@registry.register_loss("contrastive_cross_entropy")
+class PairWiseCrossEntropyLoss(nn.Module):
+    def __init__(self, params=None):
+        super().__init__()
+        if params is None:
+            params = {}
+        self.loss_fn = nn.CrossEntropyLoss(**params)
+
+    def forward(self, sample_list, model_output):
+        batch_size = sample_list.targets.shape[0]
+        
+        device = sample_list.targets.device
+        
+        left = sample_list.targets[0:batch_size:2]
+        right = sample_list.targets[1:batch_size:2]
+        new_targets = left==right
+        new_targets = torch.cuda.LongTensor(new_targets.long())
+      
+        
+        loss2 = self.loss_fn(model_output["extra_logits"], new_targets) # pair-wise loss
+        loss1 = self.loss_fn(model_output["scores"], sample_list.targets)
+        
+        return loss1 + loss2
