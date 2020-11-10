@@ -80,9 +80,10 @@ class MMFTrainer(
 
     def load_model(self):
         logger.info("Loading model")
-        model_list = ['visual_bert_v2', 'visual_bert_v3']
+        # Set the config files for 
+        model_list = ['multi_task_pair_wise_visual_bert', 'attn_based_multi_task_pair_wise_visual_bert', 'attn_based_pair_concat_visual_bert']
         if self.config.model in model_list:
-            attributes = self.config.model_config[self.config.model[:-3]]
+            attributes = self.config.model_config['visual_bert']
         # Easy way to point to config for other model
         if isinstance(attributes, str):
             attributes = self.config.model_config[attributes]
